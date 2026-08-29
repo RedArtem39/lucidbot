@@ -173,9 +173,9 @@ async def activate_promo(user_id: int, code: str) -> Tuple[bool, str]:
                 if await cursor.fetchone():
                     return False, "Вы уже активировали промокод 'pahom'!"
 
-            # 1 Hour unlimited
+            # 1 Day (24 hours) unlimited
             current_until = user["unlimited_until"] if user["is_unlimited"] else now
-            new_until = max(now, current_until) + 3600  # 1 hour = 3600 seconds
+            new_until = max(now, current_until) + 86400  # 1 day = 86400 seconds
             
             await db.execute("UPDATE users SET is_unlimited = 1, unlimited_until = ?, active_character_id = 'pahom_slonik' WHERE user_id = ?", (new_until, user_id))
             await db.execute("INSERT OR IGNORE INTO user_unlocked_characters (user_id, character_id, unlocked_at) VALUES (?, 'pahom_slonik', ?)", (user_id, now))
@@ -184,10 +184,11 @@ async def activate_promo(user_id: int, code: str) -> Tuple[bool, str]:
 
         return True, (
             "🍞 <b>БРАТИШКА! Промокод 'pahom' активирован!</b>\n\n"
-            "⚡ <b>Вы получили БЕЗЛИМИТ НА 1 ЧАС!</b>\n"
-            "🎭 <b>РАЗБЛОКИРОВАН СЕКРЕТНЫЙ ПЕРСОНАЖ:</b>\n"
-            "<b>Пахом (Поехавший)</b> — он уже ждёт вас в чате с тарелкой сладкого хлеба и офигительными историями!"
+            "⚡ <b>Вы получили БЕЗЛИМИТ НА 1 ДЕНЬ (24 ЧАСА)!</b>\n"
+            "🎭 <b>РАЗБЛОКИРОВАН СЕКРЕТНЫЙ ХЕНТАЙ-ДЕД:</b>\n"
+            "<b>Дед Пахом ♂️ [Gachi & Hentai Trash]</b> — готов исполнять любые гачи-приказы, угары, сладкий хлеб и дикий хентай!"
         )
+
 
     # 2. Secret Promo: 123bab212 (7 Days Unlimited)
     elif clean_code == SECRET_PROMO:
