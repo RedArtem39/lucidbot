@@ -165,33 +165,7 @@ async def activate_promo(user_id: int, code: str) -> Tuple[bool, str]:
     now = int(time.time())
     user = await get_or_create_user(user_id)
 
-    # 1. Secret Promo: pahom (1 Hour Unlimited + Unlock Pahom character)
-    if clean_code.lower() == "pahom":
-        async with aiosqlite.connect(DB_PATH) as db:
-            # Check if already activated
-            async with db.execute("SELECT 1 FROM promo_activations WHERE user_id = ? AND promo_code = 'pahom'", (user_id,)) as cursor:
-                if await cursor.fetchone():
-                    return False, "Вы уже активировали промокод 'pahom'!"
-
-            # 1 Day (24 hours) unlimited
-            current_until = user["unlimited_until"] if user["is_unlimited"] else now
-            new_until = max(now, current_until) + 86400  # 1 day = 86400 seconds
-            
-            await db.execute("UPDATE users SET is_unlimited = 1, unlimited_until = ?, active_character_id = 'pahom_slonik' WHERE user_id = ?", (new_until, user_id))
-            await db.execute("INSERT OR IGNORE INTO user_unlocked_characters (user_id, character_id, unlocked_at) VALUES (?, 'pahom_slonik', ?)", (user_id, now))
-            await db.execute("INSERT INTO promo_activations (user_id, promo_code, activated_at) VALUES (?, 'pahom', ?)", (user_id, now))
-            await db.commit()
-
-        return True, (
-            "🍞 <b>БРАТИШКА! Промокод 'pahom' активирован!</b>\n\n"
-            "⚡ <b>Вы получили БЕЗЛИМИТ НА 1 ДЕНЬ (24 ЧАСА)!</b>\n"
-            "🎭 <b>РАЗБЛОКИРОВАН СЕКРЕТНЫЙ ХЕНТАЙ-ДЕД:</b>\n"
-            "<b>Дед Пахом ♂️ [Gachi & Hentai Trash]</b> — готов исполнять любые гачи-приказы, угары, сладкий хлеб и дикий хентай!"
-        )
-
-
-    # 2. Secret Promo: 123bab212 (7 Days Unlimited)
-    elif clean_code == SECRET_PROMO:
+    if clean_code == SECRET_PROMO:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute("SELECT 1 FROM promo_activations WHERE user_id = ? AND promo_code = ?", (user_id, clean_code)) as cursor:
                 if await cursor.fetchone():
@@ -205,6 +179,7 @@ async def activate_promo(user_id: int, code: str) -> Tuple[bool, str]:
         return True, f"Промокод активирован! Вы получили безлимитный доступ на {PROMO_DURATION_DAYS} дней."
 
     return False, "Неверный промокод!"
+
 
 
 async def save_message(user_id: int, character_id: str, role: str, content: str):
