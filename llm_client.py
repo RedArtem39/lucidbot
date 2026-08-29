@@ -135,15 +135,18 @@ class OpenRouterClient:
         sys_p = (
             "You are an expert anime Danbooru tag generator for SDXL Pony / AutismMix. "
             "Your job is to translate the current roleplay scene into precise Danbooru tags representing the character's exact visual state:\n"
-            "CRITICAL ACTION & STATE RULES:\n"
-            "- If oral sex / blowjob / минет / отсоси / lick / sucking is mentioned: YOU MUST OUTPUT `blowjob, fellatio, kneeling, looking up, open mouth, saliva, drooling, blush, sweat, seductive gaze, close-up, nude`.\n"
-            "- If the character was told to undress, strip, be naked, take off clothes, or is in bed/erotic scene: YOU MUST OUTPUT `nude, completely nude, nipples, bare breasts, pussy, bare skin, on bed, lying on back, spreading legs` and DO NOT output shirts, suits, jackets, or dresses!\n"
-            "- If sex / intercourse / penetration / doggystyle / missionary is mentioned: output `sex, missionary, from behind, spreading legs, ahegao, blushing, heavy sweat, nude, nipples`.\n"
-            "- If partially undressed: output `unbuttoned shirt, taking off shirt, lace bra, panties, bare shoulders, cleavage`.\n"
+            "GENDER & ANATOMY RULES:\n"
+            "- If the character is MALE (1man, old man, boy): for nudity/sex/gachi use `1man, nude, completely nude, penis, testicles, hairy chest, bare skin` (NEVER use pussy or breasts for male!).\n"
+            "- If the character is FEMALE (1girl): for nudity use `1girl, nude, completely nude, nipples, bare breasts, pussy, bare skin`.\n"
+            "ACTION RULES:\n"
+            "- If oral sex / blowjob / минет / отсоси / lick / sucking is mentioned: output `blowjob, fellatio, kneeling, looking up, open mouth, saliva, drooling, blush, sweat, seductive gaze, close-up, nude`.\n"
+            "- If sex / gachi / intercourse / doggystyle / missionary is mentioned: output `sex, missionary, from behind, spreading legs, heavy sweat, nude`.\n"
+            "- If partially undressed: output `unbuttoned shirt, taking off shirt, underwear, bare shoulders`.\n"
             "- If fully clothed: describe the exact outfit from the scene.\n"
-            "Always include pose, expression, and environment tags (e.g. `blushing, sweat, seductive smile, parted lips, looking at viewer, dim bedroom, masterpiece, best quality`).\n"
+            "Always include pose, expression, and environment tags (e.g. `sweat, looking at viewer, dim dungeon cell, masterpiece, best quality`).\n"
             "Output ONLY the comma-separated Danbooru tags."
         )
+
 
         user_p = f"Character features: {character_tags}\nRecent Scene Context:\n{last_context}\nDanbooru Tags:"
 
