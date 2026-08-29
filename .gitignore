@@ -1,0 +1,38 @@
+# Environment & Secret Keys
+.env
+.env.local
+*.env
+
+# Databases & SQLite
+*.db
+*.sqlite3
+*.sqlite
+*.db-wal
+*.db-shm
+
+# Python Cache & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Media & User Temp Files
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.mp4
+temp/
+logs/
+*.log
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
