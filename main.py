@@ -46,19 +46,27 @@ def get_chat_kb(character_id: str, affection: int) -> InlineKeyboardMarkup:
     )
     return builder.as_markup()
 
-def get_catalog_kb() -> InlineKeyboardMarkup:
+def get_catalog_kb(unlocked_ids: list = None) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    unlocked_ids = unlocked_ids or []
     
+    # Secret Characters Section (if unlocked)
+    secret_list = [c for c in chars.list_characters() if c.get("is_secret") and c["id"] in unlocked_ids]
+    if secret_list:
+        builder.row(InlineKeyboardButton(text="🍞 --- СЕКРЕТНЫЕ ПЕРСОНАЖИ ---", callback_data="cat_header_secret"))
+        for c in secret_list:
+            builder.row(InlineKeyboardButton(text=c["name"], callback_data=f"select_char:{c['id']}"))
+
     # 18+ Hentai Section
     builder.row(InlineKeyboardButton(text="🔞 --- 18+ ХЕНТАЙ (100% СИМПАТИЯ) ---", callback_data="cat_header_3"))
     for c in chars.list_characters():
-        if c.get("tier") == 3:
+        if c.get("tier") == 3 and not c.get("is_secret"):
             builder.row(InlineKeyboardButton(text=c["name"], callback_data=f"select_char:{c['id']}"))
 
     # SFW Everyday Section
     builder.row(InlineKeyboardButton(text="💬 --- ДРУЗЬЯ & СОБЕСЕДНИКИ ---", callback_data="cat_header_1"))
     for c in chars.list_characters():
-        if c.get("tier") == 1:
+        if c.get("tier") == 1 and not c.get("is_secret"):
             builder.row(InlineKeyboardButton(text=c["name"], callback_data=f"select_char:{c['id']}"))
 
     builder.row(InlineKeyboardButton(text="⬅️ В чат", callback_data="back_to_chat"))
@@ -95,7 +103,9 @@ async def cmd_start(message: types.Message):
 
 @dp.message(Command("catalog"))
 async def cmd_catalog(message: types.Message):
-    await message.answer("🎭 <b>Выберите персонажа для общения:</b>", parse_mode="HTML", reply_markup=get_catalog_kb())
+    unlocked = await db.get_unlocked_characters(message.from_user.id)
+    await message.answer("🎭 <b>Выберите персонажа для общения:</b>", parse_mode="HTML", reply_markup=get_catalog_kb(unlocked))
+
 
 @dp.message(Command("profile"))
 async def cmd_profile(message: types.Message):
@@ -130,7 +140,10 @@ async def cmd_promo(message: types.Message):
     code = args[1].strip()
     ok, msg = await db.activate_promo(message.from_user.id, code)
     if ok:
-        await message.answer(f"🎉 <b>Успешно!</b>\n\n{msg}", parse_mode="HTML")
+        user = await db.get_or_create_user(message.from_user.id, message.from_user.username)
+        char = chars.get_character(user["active_character_id"])
+        affection = await db.get_affection(message.from_user.id, char["id"])
+        await message.answer(f"🎉 {msg}\n\n{char['greeting']}", parse_mode="HTML", reply_markup=get_chat_kb(char["id"], affection))
     else:
         await message.answer(f"❌ {msg}")
 
@@ -139,7 +152,6 @@ async def callback_cat_header(callback: types.CallbackQuery):
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("select_char:"))
-
 async def callback_select_char(callback: types.CallbackQuery):
     char_id = callback.data.split(":")[1]
     char = chars.get_character(char_id)
@@ -158,8 +170,10 @@ async def callback_select_char(callback: types.CallbackQuery):
 
 @dp.callback_query(F.data == "catalog")
 async def callback_catalog(callback: types.CallbackQuery):
-    await callback.message.edit_text("🎭 <b>Выберите персонажа для общения:</b>", parse_mode="HTML", reply_markup=get_catalog_kb())
+    unlocked = await db.get_unlocked_characters(callback.from_user.id)
+    await callback.message.edit_text("🎭 <b>Выберите персонажа для общения:</b>", parse_mode="HTML", reply_markup=get_catalog_kb(unlocked))
     await callback.answer()
+
 
 @dp.callback_query(F.data == "profile")
 async def callback_profile(callback: types.CallbackQuery):

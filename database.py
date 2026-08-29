@@ -58,6 +58,16 @@ async def init_db():
             PRIMARY KEY (user_id, character_id)
         )
         """)
+
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS user_unlocked_characters (
+            user_id INTEGER,
+            character_id TEXT,
+            unlocked_at INTEGER,
+            PRIMARY KEY (user_id, character_id)
+        )
+        """)
+
         
         await db.execute("""
         CREATE TABLE IF NOT EXISTS promo_activations (
@@ -139,25 +149,62 @@ async def deduct_energy(user_id: int, is_photo: bool = False) -> bool:
         await db.commit()
     return True
 
+async def is_character_unlocked(user_id: int, character_id: str) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT 1 FROM user_unlocked_characters WHERE user_id = ? AND character_id = ?", (user_id, character_id)) as cursor:
+            return bool(await cursor.fetchone())
+
+async def get_unlocked_characters(user_id: int) -> List[str]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT character_id FROM user_unlocked_characters WHERE user_id = ?", (user_id,)) as cursor:
+            rows = await cursor.fetchall()
+            return [r[0] for r in rows]
+
 async def activate_promo(user_id: int, code: str) -> Tuple[bool, str]:
     clean_code = code.strip()
     now = int(time.time())
+    user = await get_or_create_user(user_id)
 
-    
-    if clean_code != SECRET_PROMO:
-        return False, "Неверный промокод!"
+    # 1. Secret Promo: pahom (1 Hour Unlimited + Unlock Pahom character)
+    if clean_code.lower() == "pahom":
+        async with aiosqlite.connect(DB_PATH) as db:
+            # Check if already activated
+            async with db.execute("SELECT 1 FROM promo_activations WHERE user_id = ? AND promo_code = 'pahom'", (user_id,)) as cursor:
+                if await cursor.fetchone():
+                    return False, "Вы уже активировали промокод 'pahom'!"
 
-    async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute("SELECT * FROM promo_activations WHERE user_id = ? AND promo_code = ?", (user_id, clean_code)) as cursor:
-            if await cursor.fetchone():
-                return False, "Вы уже активировали этот промокод!"
+            # 1 Hour unlimited
+            current_until = user["unlimited_until"] if user["is_unlimited"] else now
+            new_until = max(now, current_until) + 3600  # 1 hour = 3600 seconds
+            
+            await db.execute("UPDATE users SET is_unlimited = 1, unlimited_until = ?, active_character_id = 'pahom_slonik' WHERE user_id = ?", (new_until, user_id))
+            await db.execute("INSERT OR IGNORE INTO user_unlocked_characters (user_id, character_id, unlocked_at) VALUES (?, 'pahom_slonik', ?)", (user_id, now))
+            await db.execute("INSERT INTO promo_activations (user_id, promo_code, activated_at) VALUES (?, 'pahom', ?)", (user_id, now))
+            await db.commit()
 
-        until = now + (PROMO_DURATION_DAYS * 86400)
-        await db.execute("UPDATE users SET is_unlimited = 1, unlimited_until = ? WHERE user_id = ?", (until, user_id))
-        await db.execute("INSERT INTO promo_activations (user_id, promo_code, activated_at) VALUES (?, ?, ?)", (user_id, clean_code, now))
-        await db.commit()
+        return True, (
+            "🍞 <b>БРАТИШКА! Промокод 'pahom' активирован!</b>\n\n"
+            "⚡ <b>Вы получили БЕЗЛИМИТ НА 1 ЧАС!</b>\n"
+            "🎭 <b>РАЗБЛОКИРОВАН СЕКРЕТНЫЙ ПЕРСОНАЖ:</b>\n"
+            "<b>Пахом (Поехавший)</b> — он уже ждёт вас в чате с тарелкой сладкого хлеба и офигительными историями!"
+        )
 
-    return True, f"Промокод активирован! Вы получили безлимитный доступ на {PROMO_DURATION_DAYS} дней."
+    # 2. Secret Promo: 123bab212 (7 Days Unlimited)
+    elif clean_code == SECRET_PROMO:
+        async with aiosqlite.connect(DB_PATH) as db:
+            async with db.execute("SELECT 1 FROM promo_activations WHERE user_id = ? AND promo_code = ?", (user_id, clean_code)) as cursor:
+                if await cursor.fetchone():
+                    return False, "Вы уже активировали этот промокод!"
+
+            until = now + (PROMO_DURATION_DAYS * 86400)
+            await db.execute("UPDATE users SET is_unlimited = 1, unlimited_until = ? WHERE user_id = ?", (until, user_id))
+            await db.execute("INSERT INTO promo_activations (user_id, promo_code, activated_at) VALUES (?, ?, ?)", (user_id, clean_code, now))
+            await db.commit()
+
+        return True, f"Промокод активирован! Вы получили безлимитный доступ на {PROMO_DURATION_DAYS} дней."
+
+    return False, "Неверный промокод!"
+
 
 async def save_message(user_id: int, character_id: str, role: str, content: str):
     now = int(time.time())
