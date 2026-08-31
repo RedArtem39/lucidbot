@@ -165,7 +165,33 @@ async def activate_promo(user_id: int, code: str) -> Tuple[bool, str]:
     now = int(time.time())
     user = await get_or_create_user(user_id)
 
-    if clean_code == SECRET_PROMO:
+    # 1. Promo: fem / /fem (Unlocks Catboy & Catgirl + 1 Day Unlimited)
+    if clean_code.lower() in ["fem", "/fem", "femme"]:
+        async with aiosqlite.connect(DB_PATH) as db:
+            async with db.execute("SELECT 1 FROM promo_activations WHERE user_id = ? AND promo_code = 'fem'", (user_id,)) as cursor:
+                if await cursor.fetchone():
+                    return False, "Вы уже активировали промокод '/fem'!"
+
+            current_until = user["unlimited_until"] if user["is_unlimited"] else now
+            new_until = max(now, current_until) + 86400  # 1 day unlimited
+            
+            await db.execute("UPDATE users SET is_unlimited = 1, unlimited_until = ?, active_character_id = 'catboy_felix' WHERE user_id = ?", (new_until, user_id))
+            await db.execute("INSERT OR IGNORE INTO user_unlocked_characters (user_id, character_id, unlocked_at) VALUES (?, 'catboy_felix', ?)", (user_id, now))
+            await db.execute("INSERT OR IGNORE INTO user_unlocked_characters (user_id, character_id, unlocked_at) VALUES (?, 'catgirl_nyan', ?)", (user_id, now))
+            await db.execute("INSERT INTO promo_activations (user_id, promo_code, activated_at) VALUES (?, 'fem', ?)", (user_id, now))
+            await db.commit()
+
+        return True, (
+            "🐾 <b>ПРОМОКОД АКТИВИРОВАН!</b>\n\n"
+            "⚡ <b>Вы получили БЕЗЛИМИТ НА 1 ДЕНЬ (24 ЧАСА)!</b>\n"
+            "🎭 <b>РАЗБЛОКИРОВАНЫ СЕКРЕТНЫЕ ПЕРСОНАЖИ:</b>\n"
+            "1. <b>Феликс (Catboy) 🐾♂️</b> — покорный кошко-мальчик (активен сейчас!)\n"
+            "2. <b>Няночка (Catgirl) 🐾♀️</b> — страстная неко-тян\n\n"
+            "Они уже доступны в каталоге и готовы исполнять любые ваши желания!"
+        )
+
+    # 2. Secret Promo: 123bab212 (7 Days Unlimited)
+    elif clean_code == SECRET_PROMO:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute("SELECT 1 FROM promo_activations WHERE user_id = ? AND promo_code = ?", (user_id, clean_code)) as cursor:
                 if await cursor.fetchone():
@@ -179,6 +205,7 @@ async def activate_promo(user_id: int, code: str) -> Tuple[bool, str]:
         return True, f"Промокод активирован! Вы получили безлимитный доступ на {PROMO_DURATION_DAYS} дней."
 
     return False, "Неверный промокод!"
+
 
 
 
