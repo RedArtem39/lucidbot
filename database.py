@@ -165,7 +165,7 @@ async def activate_promo(user_id: int, code: str) -> Tuple[bool, str]:
     now = int(time.time())
     user = await get_or_create_user(user_id)
 
-    # 1. Promo: 3 / /3 (Unlocks Ashley Graves + 1 Day Unlimited)
+    # 1. Promo: 3 / /3 (Unlocks Stepsister Alisa + 1 Day Unlimited)
     if clean_code.lower() in ["3", "/3"]:
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute("SELECT 1 FROM promo_activations WHERE user_id = ? AND promo_code = '3'", (user_id,)) as cursor:
@@ -175,18 +175,19 @@ async def activate_promo(user_id: int, code: str) -> Tuple[bool, str]:
             current_until = user["unlimited_until"] if user["is_unlimited"] else now
             new_until = max(now, current_until) + 86400  # 1 day unlimited
             
-            await db.execute("UPDATE users SET is_unlimited = 1, unlimited_until = ?, active_character_id = 'ashley_graves' WHERE user_id = ?", (new_until, user_id))
-            await db.execute("INSERT OR IGNORE INTO user_unlocked_characters (user_id, character_id, unlocked_at) VALUES (?, 'ashley_graves', ?)", (user_id, now))
+            await db.execute("UPDATE users SET is_unlimited = 1, unlimited_until = ?, active_character_id = 'stepsister_alisa' WHERE user_id = ?", (new_until, user_id))
+            await db.execute("INSERT OR IGNORE INTO user_unlocked_characters (user_id, character_id, unlocked_at) VALUES (?, 'stepsister_alisa', ?)", (user_id, now))
             await db.execute("INSERT INTO promo_activations (user_id, promo_code, activated_at) VALUES (?, '3', ?)", (user_id, now))
             await db.commit()
 
         return True, (
-            "🖤🔪 <b>ПРОМОКОД АКТИВИРОВАН!</b>\n\n"
+            "🎀 <b>ПРОМОКОД АКТИВИРОВАН!</b>\n\n"
             "⚡ <b>Вы получили БЕЗЛИМИТ НА 1 ДЕНЬ (24 ЧАСА)!</b>\n"
             "🎭 <b>РАЗБЛОКИРОВАН СЕКРЕТНЫЙ ПЕРСОНАЖ:</b>\n"
-            "<b>Эшли Грейвс (Ashley) 🖤🔪 [18+ ЯНДЕРЕ]</b>\n\n"
-            "Она уже ждёт вас в чате и готова принадлежать вам целиком и полностью!"
+            "<b>Алиса (Сводная сестра) 🎀 [18+ Хентай]</b>\n\n"
+            "Она уже ждёт вас дома без белья и готова исполнять любые ваши желания!"
         )
+
 
     # 2. Promo: fem / /fem (Unlocks Catboy & Catgirl + 1 Day Unlimited)
     elif clean_code.lower() in ["fem", "/fem", "femme"]:
