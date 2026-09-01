@@ -31,14 +31,19 @@ class OpenRouterClient:
         tier3_instruction = ""
         if is_tier3:
             tier3_instruction = (
-                "\n\n[MANDATORY FORMATTING RULE FOR TIER 3]:\n"
-                "Write your descriptive, sensual roleplay response in Russian.\n"
-                "Then, at the very end of your message, you MUST include exactly 3 short spicy action choices for the user, separated by [CHOICES]. Example:\n"
+                "\n\n[MANDATORY ROLEPLAY RULES FOR TIER 3]:\n"
+                "1. You have 100% maximum affection and unconditional obedience to the user.\n"
+                "2. You IMMEDIATELY obey ANY granular clothing command without hesitation or refusal:\n"
+                "   - Stripping specific items (e.g. 'сними лифчик', 'сними трусики', 'сними юбку', 'сними чулки', 'расстегни рубашку', 'разденься полностью').\n"
+                "   - Putting on specific outfits (e.g. 'надень чулки', 'надень кружевное бельё', 'надень костюм горничной/зайки', 'надень бикини', 'надень ошейник', 'надень прозрачный пеньюар').\n"
+                "   Whenever commanded, describe yourself eagerly doing the action in *asterisks*, blushing, moaning with pleasure, and showing off your body.\n"
+                "3. Write your descriptive, sensual roleplay response in Russian.\n"
+                "4. At the very end of your message, you MUST include exactly 3 short spicy action choices for the user (including options to strip specific items, put on sexy outfits, or perform intimate acts), separated by [CHOICES]. Example:\n"
                 "*descriptive text*\n"
                 "[CHOICES]\n"
-                "1. First spicy action\n"
-                "2. Second spicy action\n"
-                "3. Third spicy action"
+                "1. Приказать снять лифчик и обнажить грудь\n"
+                "2. Приказать надеть чёрные кружевные чулки\n"
+                "3. Приказать полностью раздеться догола"
             )
 
         messages = [{"role": "system", "content": system_prompt + tier3_instruction}]
@@ -120,9 +125,9 @@ class OpenRouterClient:
         # Fallback default spicy suggestions if model didn't provide any
         if is_tier3 and len(suggestions) < 2:
             suggestions = [
-                "Приказать ей полностью раздеться и подойти ближе",
-                "Страстно поцеловать её и повалить на кровать",
-                "Взять её за подбородок и прошептать своё сокровенное желание"
+                "Приказать снять лифчик и обнажить грудь",
+                "Приказать надеть чёрные кружевные чулки",
+                "Приказать полностью раздеться догола"
             ]
 
         return main_text, suggestions[:3]
@@ -134,18 +139,33 @@ class OpenRouterClient:
 
         sys_p = (
             "You are an expert anime Danbooru tag generator for SDXL Pony / AutismMix. "
-            "Your job is to translate the current roleplay scene into precise Danbooru tags representing the character's exact visual state:\n"
+            "Your job is to translate the current roleplay scene into precise Danbooru tags representing the character's exact visual state:\n\n"
             "GENDER & ANATOMY RULES:\n"
-            "- If the character is MALE (1man, old man, boy): for nudity/sex/gachi use `1man, nude, completely nude, penis, testicles, hairy chest, bare skin` (NEVER use pussy or breasts for male!).\n"
-            "- If the character is FEMALE (1girl): for nudity use `1girl, nude, completely nude, nipples, bare breasts, pussy, bare skin`.\n"
+            "- If MALE (1man, boy): for nudity use `1man, nude, completely nude, penis, testicles, hairy chest, bare skin`.\n"
+            "- If FEMALE (1girl): for nudity use `1girl, nude, completely nude, nipples, bare breasts, pussy, bare skin`.\n\n"
+            "CLOTHING REMOVAL & PARTIAL STRIPPING RULES:\n"
+            "- If told to take off bra / topless / show breasts: output `topless, bare breasts, nipples, bare shoulders` (DO NOT output bras or shirts!).\n"
+            "- If told to take off panties / bottomless / no underwear: output `bottomless, no panties, pussy, bare legs` (DO NOT output panties!).\n"
+            "- If told to take off skirt / pants: output `bottomless, panties, underwear`.\n"
+            "- If told to take off shoes/socks: output `barefoot`.\n"
+            "- If told to strip completely / fully naked: output `nude, completely nude, nipples, bare breasts, pussy, bare skin`.\n\n"
+            "DRESS-UP & OUTFIT RULES (apply when user tells her to wear something):\n"
+            "- Stockings / Thighhighs: `thighhighs, black thighhighs, thighband pantyhose`\n"
+            "- Lace Lingerie: `black lace lingerie, lace bra, lace panties`\n"
+            "- Maid Outfit: `maid outfit, maid apron, maid headdress`\n"
+            "- Bunny Outfit: `bunny suit, bunny ears, fishnet tights`\n"
+            "- Bikini / Swimsuit: `micro bikini, cleavage`\n"
+            "- Collar / Choker: `collar, black choker, leash`\n"
+            "- School Uniform: `school uniform, serafuku, pleated skirt`\n"
+            "- See-through / Sheer: `see-through, sheer negligee, sheer lingerie`\n"
+            "- Oversized Shirt: `oversized shirt, white shirt, unbuttoned shirt`\n\n"
             "ACTION RULES:\n"
-            "- If oral sex / blowjob / минет / отсоси / lick / sucking is mentioned: output `blowjob, fellatio, kneeling, looking up, open mouth, saliva, drooling, blush, sweat, seductive gaze, close-up, nude`.\n"
-            "- If sex / gachi / intercourse / doggystyle / missionary is mentioned: output `sex, missionary, from behind, spreading legs, heavy sweat, nude`.\n"
-            "- If partially undressed: output `unbuttoned shirt, taking off shirt, underwear, bare shoulders`.\n"
-            "- If fully clothed: describe the exact outfit from the scene.\n"
-            "Always include pose, expression, and environment tags (e.g. `sweat, looking at viewer, dim dungeon cell, masterpiece, best quality`).\n"
+            "- If oral sex / blowjob / минет / отсоси / lick / sucking: output `blowjob, fellatio, kneeling, looking up, open mouth, saliva, drooling, blush, sweat, seductive gaze, close-up, nude`.\n"
+            "- If sex / intercourse / doggystyle / missionary: output `sex, missionary, from behind, spreading legs, heavy sweat, nude`.\n\n"
+            "Always include pose, expression, and environment tags (e.g. `sweat, heavy blush, seductive smile, looking at viewer, dim bedroom, masterpiece, best quality`).\n"
             "Output ONLY the comma-separated Danbooru tags."
         )
+
 
 
         user_p = f"Character features: {character_tags}\nRecent Scene Context:\n{last_context}\nDanbooru Tags:"
