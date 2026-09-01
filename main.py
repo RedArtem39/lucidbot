@@ -131,7 +131,6 @@ async def cmd_profile(message: types.Message):
     await message.answer(text, parse_mode="HTML", reply_markup=get_profile_kb())
 
 @dp.message(Command("fem"))
-
 async def cmd_fem(message: types.Message):
     ok, msg = await db.activate_promo(message.from_user.id, "fem")
     if ok:
@@ -141,6 +140,18 @@ async def cmd_fem(message: types.Message):
         await message.answer(f"🎉 {msg}\n\n{char['greeting']}", parse_mode="HTML", reply_markup=get_chat_kb(char["id"], affection))
     else:
         await message.answer(f"❌ {msg}")
+
+@dp.message(Command("3"))
+async def cmd_3(message: types.Message):
+    ok, msg = await db.activate_promo(message.from_user.id, "3")
+    if ok:
+        user = await db.get_or_create_user(message.from_user.id, message.from_user.username)
+        char = chars.get_character(user["active_character_id"])
+        affection = await db.get_affection(message.from_user.id, char["id"])
+        await message.answer(f"🎉 {msg}\n\n{char['greeting']}", parse_mode="HTML", reply_markup=get_chat_kb(char["id"], affection))
+    else:
+        await message.answer(f"❌ {msg}")
+
 
 @dp.message(Command("promo"))
 async def cmd_promo(message: types.Message):
